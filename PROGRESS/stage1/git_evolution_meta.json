@@ -1,0 +1,14 @@
+{
+  "baseline_commit": "454ee663981cf6c51b5fc3f190fb0ed0fcdf799b",
+  "since_24m": "2024-11-18T15:19:13+00:00",
+  "since_12m": "2025-11-18T15:19:13+00:00",
+  "since_6m_active_cutoff": "2026-05-20T15:19:13+00:00",
+  "non_merge_commits_analyzed": 4330,
+  "distinct_authors_24m": 376,
+  "active_authors_6m": 140,
+  "baseline_files_modified_in_24m": 4732,
+  "baseline_java_files_modified_in_24m": 3289,
+  "coupling_max_files_per_commit": 30,
+  "skipped_bulk_commits_for_coupling": 57,
+  "coupling_pairs_min_shared_5": 311
+}

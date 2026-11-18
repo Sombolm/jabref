@@ -6,6 +6,8 @@
 .code-review-graph/
 
 # CLAUDE.md and GEMINI.md are intentionally tracked in this audit fork
+.audit-tools/
+.venv/
 .mcp.json
 .claude/*
 !.claude/settings.json

@@ -1,17 +1,17 @@
 # System Maintainability Audit & Refactoring Plan — JabRef
 
-> **SYNC RULE (CLAUDE.md <-> GEMINI.md):**
-> This file (`CLAUDE.md`) and `GEMINI.md` are paired instructions and progress trackers for multi-environment work (Claude Code and Antigravity / Gemini).
-> **Whenever you update progress, complete a task, record findings, or adjust the plan, you MUST update BOTH `CLAUDE.md` and `GEMINI.md` so they remain synchronized.**
-> Save all analysis outputs, scripts, charts, and report drafts inside [`PROGRESS/`](./PROGRESS/).
-> This is an audit fork (`Sombolm/jabref`) of `JabRef/jabref` — do not submit audit/progress commits upstream.
+> **SYNC & RESULTS RULES:**
+> 1. **SYNC RULE (`CLAUDE.md` <-> `GEMINI.md`):** Whenever you update progress, complete a task, record findings, or adjust the plan, you MUST update **BOTH** `CLAUDE.md` and `GEMINI.md` so they remain synchronized.
+> 2. **CENTRAL RESULTS RULE:** All key results, summary tables, top findings, and stage takeaways MUST be written in ONE central, easy-to-read place: **[`PROGRESS/SUMMARY.md`](./PROGRESS/SUMMARY.md)**. Raw exports (`csv`/`json`), scripts, and charts go into `PROGRESS/stage1/`, `PROGRESS/stage2/`, `PROGRESS/stage3/`, and `PROGRESS/charts/`.
+> 3. **GIT WORKFLOW:** Commit and push progress regularly to our audit fork (`Sombolm/jabref`, branch `main`). Never commit `.audit-tools/` or `.venv/`, and never submit audit commits upstream to `JabRef/jabref`.
 
 ---
 
 ## 1. Selected Scope & Toolchain
 
 - **Target Repository:** `JabRef/jabref` (Java) — Fork: `https://github.com/Sombolm/jabref` (branch `main`)
-- **Output Directory:** `PROGRESS/`
+- **Baseline Analyzed Commit:** `454ee663981cf6c51b5fc3f190fb0ed0fcdf799b` (`2026-11-18`, excludes audit setup commits)
+- **Central Readable Results:** [`PROGRESS/SUMMARY.md`](./PROGRESS/SUMMARY.md)
 - **Toolchain (1 primary tool per category):**
   1. **Size Metrics:** `scc` (LOC, SLOC, files, language breakdown)
   2. **Complexity Analysis:** `PMD` (Cyclomatic Complexity & Cognitive Complexity)
@@ -30,66 +30,43 @@ Conduct a comprehensive internal quality assessment of `JabRef/jabref` combining
 Analyze the current state of `main` and Git history, extracting raw metrics across three dimensions:
 
 - **Task 1.1: Static Code Metrics**
-  - Target branch: current state of `main`
+  - Target branch: current state of `main` (at baseline `454ee66398`)
   - Granularity: file / class level
-  - Required metrics:
-    - Lines of Code (`LOC`)
-    - `Cyclomatic Complexity`
-    - `Cognitive Complexity`
-    - Depth of Inheritance Tree (`DIT`)
-    - Coupling Between Objects (`CBO`)
+  - Required metrics: `LOC`, `Cyclomatic Complexity`, `Cognitive Complexity`, `DIT`, `CBO`
 - **Task 1.2: Code Smells Detection**
   - Scan the codebase for maintainability issues
-  - Export a list of the most frequent and most severe code smells (e.g., God Class / Blob, Long Method, Feature Envy, Duplicated Code, Shotgun Surgery)
+  - Export most frequent & most severe smells (God Class / Blob, Long Method, Feature Envy / excessive coupling, Duplicated Code, Shotgun Surgery)
 - **Task 1.3: Repository Evolution Metrics**
   - Time window: last **12 to 24 months** of Git commit history
-  - Required metrics:
-    - **Change Frequency (Churn):** number of commits modifying each file
-    - **Code Ownership:** number of distinct authors per file and percentage of contributions by the main author
-    - **Temporal (Logical) Coupling:** pairs or groups of files that frequently change together within the same commit
+  - Required metrics: **Change Frequency (Churn)**, **Code Ownership** (distinct authors & % main author), **Temporal (Logical) Coupling**
 
 ### Stage 2: Data Correlation & Hotspot Analysis
-Combine static and historical data to find where quality issues actively hurt development:
-
-- **Task 2.1: Hotspot Identification**
-  - Overlay complexity metrics (`Cognitive Complexity` or `LOC`) with `Change Frequency`
-  - Identify the **top 5 most critical hotspots** (files/modules that are both highly complex and frequently modified)
-- **Task 2.2: Logical Coupling Analysis**
-  - Identify pairs of files with high co-change (e.g., `> 70%` shared commits) that lack a direct architectural dependency (e.g., no inheritance or direct method calls)
-- **Task 2.3: Knowledge Loss Risk**
-  - Identify complex, core components maintained almost exclusively by a single developer (`Bus Factor = 1`), especially if that contributor is no longer active in the project
+- **Task 2.1: Hotspot Identification** — Overlay Complexity (`Cognitive Complexity` / `LOC`) with `Change Frequency`; identify **top 5 critical hotspots**
+- **Task 2.2: Logical Coupling Analysis** — Pairs with high co-change (`> 70%` shared commits) lacking direct architectural dependency
+- **Task 2.3: Knowledge Loss Risk** — Complex core components with `Bus Factor = 1` (especially inactive authors)
 
 ### Stage 3: Root Cause Analysis (RCA) & Action Plan
-Select the **top 3 to 5 most critical issues** discovered in Stage 2 and perform a deep-dive investigation:
-
-- **Task 3.1: Separating Symptoms from Root Causes**
-  - Document **Symptoms (Quantitative Evidence):** exact metrics and detected smells (e.g., LOC, Cyclomatic/Cognitive Complexity, smell counts, commit churn)
-  - Document **Probable Root Causes:** structural or process-wise explanation (e.g., SRP violation, missing Strategy/polymorphism, etc.)
-- **Task 3.2: Refactoring Solutions**
-  - Propose concrete refactoring techniques or architectural changes addressing the root cause rather than masking symptoms (e.g., Extract Class, Replace Conditional with Polymorphism, Introduce Interface to break logical coupling)
-- **Task 3.3: Prioritization**
-  - Rank the identified issues from highest to lowest priority
-  - Justify ranking based on:
-    - **Cost & Risk of Change:** check existing unit test coverage for the affected modules
-    - **Business & Technical Impact:** how frequently the team touches this code and how much it slows down feature delivery
+Select **top 3 to 5 most critical issues** from Stage 2:
+- **Task 3.1: Symptoms vs. Root Causes** — Quantitative evidence + structural/process root causes
+- **Task 3.2: Refactoring Solutions** — Concrete architectural/code refactorings
+- **Task 3.3: Prioritization** — Rank by Cost & Risk (unit test coverage) and Business & Technical Impact
 
 ### Deliverable: Final Audit Report
-Structured technical report containing:
-1. **Executive Summary:** Overall maintainability rating (1–5 scale) with brief justification.
-2. **Methodology & Setup:** Direct URL to the analyzed repository, commit range, repository size, and tool configurations.
-3. **Data Visualizations:** Charts illustrating Complexity vs. Change Frequency (Hotspot matrix) and Code Smell distribution.
-4. **Diagnostic Cards (Top 3–5 Issues):** Detailed breakdown of Symptoms, Root Causes, Refactoring Proposals, and Risk Assessment.
-5. **Prioritized Roadmap:** Action plan divided into **Quick Wins** (low risk, immediate value) and **Strategic Refactoring** (long-term architectural improvements).
+1. Executive Summary (1–5 rating + justification)
+2. Methodology & Setup (URL, commit range, repo size, tool configs)
+3. Data Visualizations (Complexity vs. Churn Hotspot Matrix, Code Smell distribution)
+4. Diagnostic Cards (Top 3–5 Issues)
+5. Prioritized Roadmap (Quick Wins vs. Strategic Refactoring)
 
 ---
 
 ## 3. Progress Tracker
 
-- [x] **Setup:** Fork `JabRef/jabref` -> `Sombolm/jabref`, clone locally, create `PROGRESS/`, create synchronized `GEMINI.md` and `CLAUDE.md`
-- [ ] **Stage 1: Data Collection**
-  - [ ] Task 1.1: Static Code Metrics (`scc`, `CK`, `PMD`)
-  - [ ] Task 1.2: Code Smells & Duplication Detection (`PMD`, `PMD CPD`)
-  - [ ] Task 1.3: Repository Evolution Metrics (`PyDriller` / `git log`, 12–24 months)
+- [x] **Setup:** Fork `JabRef/jabref` -> `Sombolm/jabref`, clone locally, create `PROGRESS/`, `PROGRESS/SUMMARY.md`, and synchronized `GEMINI.md` / `CLAUDE.md`
+- [x] **Stage 1: Data Collection** *(completed — raw exports in `PROGRESS/stage1/`, consolidated summary in [`PROGRESS/SUMMARY.md`](./PROGRESS/SUMMARY.md))*
+  - [x] Task 1.1: Static Code Metrics (`scc` v4.1.0, `CK` 0.7.0, `PMD` 7.29.0)
+  - [x] Task 1.2: Code Smells & Duplication Detection (`PMD` 3,007 smells, `PMD CPD` 28 clone groups)
+  - [x] Task 1.3: Repository Evolution Metrics (`PyDriller` 2.12 — 4,330 non-merge commits over 24m)
 - [ ] **Stage 2: Data Correlation & Hotspot Analysis**
   - [ ] Task 2.1: Hotspot Identification (Top 5 hotspots)
   - [ ] Task 2.2: Logical Coupling Analysis (>70% co-change without direct dependency)

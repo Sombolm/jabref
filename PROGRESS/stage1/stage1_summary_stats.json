@@ -1,0 +1,136 @@
+{
+  "scc_total_java_files": 3289,
+  "scc_main_java_files": 2311,
+  "scc_test_java_files": 966,
+  "scc_main_sloc": 208262,
+  "scc_test_sloc": 112603,
+  "ck_total_classes_extracted": 2509,
+  "ck_unique_main_files": 2152,
+  "ck_dit_max": 8,
+  "ck_dit_mean": 1.4,
+  "ck_cbo_max": 104,
+  "ck_cbo_mean": 8.23,
+  "ck_wmc_max": 341,
+  "ck_wmc_mean": 13.62,
+  "pmd_total_smells": 3007,
+  "pmd_smells_by_rule": {
+    "LawOfDemeter": 896,
+    "CyclomaticComplexity": 377,
+    "CognitiveComplexity": 297,
+    "TooManyMethods": 245,
+    "AvoidDeeplyNestedIfStmts": 241,
+    "ExcessiveImports": 204,
+    "CouplingBetweenObjects": 141,
+    "UnusedPrivateMethod": 109,
+    "GodClass": 108,
+    "NPathComplexity": 76,
+    "UnusedFormalParameter": 71,
+    "UnusedPrivateField": 63,
+    "NcssCount": 46,
+    "DataClass": 43,
+    "ExcessiveParameterList": 43,
+    "ExcessivePublicCount": 20,
+    "TooManyFields": 18,
+    "UnusedLocalVariable": 9
+  },
+  "pmd_cog_sum_total": 26315,
+  "pmd_cog_max_method": 304,
+  "pmd_cyclo_max_method": 148,
+  "cpd_summary": {
+    "clone_groups_min_100_tokens": 28,
+    "total_duplicated_lines_across_occurrences": 1378,
+    "unique_files_with_clones": 39,
+    "largest_clones": [
+      {
+        "lines": 47,
+        "tokens": 251,
+        "occurrences": 2,
+        "files": [
+          "jabgui/src/main/java/org/jabref/gui/entryeditor/AllFieldsTab.java",
+          "jabgui/src/main/java/org/jabref/gui/entryeditor/citationrelationtab/CitationEntryReviewDialog.java"
+        ]
+      },
+      {
+        "lines": 52,
+        "tokens": 212,
+        "occurrences": 2,
+        "files": [
+          "jabgui/src/main/java/org/jabref/gui/walkthrough/declarative/step/PanelStep.java",
+          "jabgui/src/main/java/org/jabref/gui/walkthrough/declarative/step/TooltipStep.java"
+        ]
+      },
+      {
+        "lines": 39,
+        "tokens": 178,
+        "occurrences": 2,
+        "files": [
+          "jablib/src/main/java/org/jabref/logic/ai/chatting/migrations/ChatHistoryMigrationV1.java",
+          "jablib/src/main/java/org/jabref/logic/ai/summarization/migration/SummariesMigrationV1.java"
+        ]
+      },
+      {
+        "lines": 49,
+        "tokens": 161,
+        "occurrences": 2,
+        "files": [
+          "jabkit/src/main/java/org/jabref/toolkit/commands/GetCitedWorks.java",
+          "jabkit/src/main/java/org/jabref/toolkit/commands/GetCitingWorks.java"
+        ]
+      },
+      {
+        "lines": 44,
+        "tokens": 154,
+        "occurrences": 2,
+        "files": [
+          "jabgui/src/main/java/org/jabref/gui/walkthrough/declarative/step/PanelStep.java",
+          "jabgui/src/main/java/org/jabref/gui/walkthrough/declarative/step/TooltipStep.java"
+        ]
+      },
+      {
+        "lines": 41,
+        "tokens": 153,
+        "occurrences": 2,
+        "files": [
+          "jabgui/src/main/java/org/jabref/gui/walkthrough/declarative/step/PanelStep.java",
+          "jabgui/src/main/java/org/jabref/gui/walkthrough/declarative/step/TooltipStep.java"
+        ]
+      },
+      {
+        "lines": 26,
+        "tokens": 147,
+        "occurrences": 2,
+        "files": [
+          "jablib/src/main/java/org/jabref/logic/push/PushToEmacs.java",
+          "jablib/src/main/java/org/jabref/logic/push/PushToVim.java"
+        ]
+      },
+      {
+        "lines": 21,
+        "tokens": 143,
+        "occurrences": 2,
+        "files": [
+          "jabsrv/src/main/java/org/jabref/http/server/resources/EntryResource.java",
+          "jabsrv/src/main/java/org/jabref/http/server/resources/EntryResource.java"
+        ]
+      },
+      {
+        "lines": 17,
+        "tokens": 137,
+        "occurrences": 2,
+        "files": [
+          "jabgui/src/main/java/org/jabref/gui/autosaveandbackup/BackupManager.java",
+          "jabgui/src/main/java/org/jabref/gui/exporter/SaveDatabaseAction.java"
+        ]
+      },
+      {
+        "lines": 31,
+        "tokens": 135,
+        "occurrences": 2,
+        "files": [
+          "jablib/src/main/java/org/jabref/logic/openoffice/oocsltext/BSTReferenceMarkManager.java",
+          "jablib/src/main/java/org/jabref/logic/openoffice/oocsltext/CSLReferenceMarkManager.java"
+        ]
+      }
+    ]
+  }
+}

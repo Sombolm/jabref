@@ -124,7 +124,67 @@
 
 ## Stage 2: Data Correlation & Hotspot Analysis
 
-*Status: Pending — ready to execute using `PROGRESS/stage1/stage1_master_java_metrics.csv` and `git_temporal_coupling_24m.csv`.*
+**Status:** Completed (`PROGRESS/stage2/` + interactive explorer [`PROGRESS/dashboard.html`](./dashboard.html) + visual PDF [`PROGRESS/charts/jabref_audit_charts.pdf`](./charts/jabref_audit_charts.pdf)).
+
+### 2.1 Top 5 Critical Hotspots (Complexity × Change Frequency)
+*(Composite Hotspot Score combines log-normalized Cognitive Complexity [50%], SLOC [30%], and CBO [20%] multiplied by log-normalized 24-month commit churn, excluding `module-info.java` / `package-info.java` manifests.)*
+
+| Rank | File | Module | Hotspot Score | 24m (12m) Commits | SLOC | Cog. Sum (Max) | CK WMC | CK CBO | CK DIT | PMD Smells | Authors |
+| :---: | :--- | :---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **#1** | `org/jabref/logic/preferences/JabRefCliPreferences.java` | `jablib` | **93.29** | **119** (79) | **2,246** | **218** (12) | 302 | **104** | 1 | 12 | 47 |
+| **#2** | `org/jabref/gui/LibraryTab.java` | `jabgui` | **76.24** | **65** (47) | **1,217** | **137** (15) | 188 | **102** | 3 | **21** (`GodClass`) | 19 |
+| **#3** | `org/jabref/gui/preferences/JabRefGuiPreferences.java` | `jabgui` | **73.00** | **69** (52) | **1,130** | **118** (13) | 126 | 46 | 2 | 10 | 34 |
+| **#4** | `org/jabref/gui/frame/JabRefFrame.java` | `jabgui` | **72.14** | **63** (35) | **833** | **114** (23) | 98 | **78** | **6** | 11 (`GodClass`) | 31 |
+| **#5** | `org/jabref/gui/entryeditor/citationrelationtab/CitationRelationsTab.java` | `jabgui` | **68.01** | **53** (38) | **911** | **96** (20) | 106 | **71** | 2 | 14 | 31 |
+| *#6* | `org/jabref/gui/externalfiles/ImportHandler.java` *(runner-up)* | `jabgui` | *67.80* | *43* (29) | *738* | ***205*** *(72)* | *105* | *55* | *1* | *14* | *22* |
+
+**Key Takeaway:** Four of the top 5 hotspots live in `jabgui`, while #1 (`JabRefCliPreferences`) is the central global preferences hub in `jablib` — acting as a change magnet (`119` commits, `47` authors, `CBO = 104`) coupled tightly with `#3 JabRefGuiPreferences` (`69` commits). Meanwhile, extreme static-complexity outliers such as `MedlineImporter.java` (Cog `504`, `13` commits) and `RisImporter.java` (Cog `304`, `9` commits) represent *latent* technical debt rather than active daily bottlenecks.
+
+---
+
+### 2.2 Logical Coupling Analysis (>70% Co-Change Without Direct Dependency)
+- Out of `311` Java co-change pairs (`>= 5` shared commits), `27` production pairs exceed `70%` co-change confidence.
+- After checking `import` declarations, same-package symbol references, and `module-info.java` manifests, **`11` non-manifest production pairs** show **`> 70%` co-change with ZERO direct architectural dependency**:
+
+| File A | File B | Shared | Commits (A / B) | Conf A→B | Conf B→A | Why Coupled (Hidden Contract) |
+| :--- | :--- | ---: | ---: | ---: | ---: | :--- |
+| `build-support/.../JournalListMvGenerator.java` | `build-support/.../LtwaListMvGenerator.java` | **22** | 26 / 31 | **84.6%** | **71.0%** | Parallel MVStore build generators sharing schema/CLI conventions without shared base abstraction |
+| `jabkit/.../commands/Convert.java` | `jabkit/.../commands/GenerateBibFromAux.java` | **7** | 13 / 9 | 53.8% | **77.8%** | Parallel CLI command wiring/conventions |
+| `jabgui/.../git/GitPullAction.java` | `jablib/.../logic/git/status/GitStatusChecker.java` | **6** | 8 / 12 | **75.0%** | 50.0% | UI action & status checker co-evolve across service boundary (`GitSyncService`) |
+| `jabgui/.../git/GitPullAction.java` | `jablib/.../logic/git/GitHandler.java` | **6** | 8 / 19 | **75.0%** | 31.6% | UI pull workflow & low-level git handler co-evolving across service boundary |
+| `jablib/.../git/GitHandler.java` | `jablib/.../git/io/GitRevisionLocator.java` | **5** | 19 / 6 | 26.3% | **83.3%** | Split git plumbing conventions |
+| `jabgui/.../preferences/ocr/OcrTabViewModel.java` | `jablib/.../logic/ocr/OcrMyPdfEngine.java` | **5** | 7 / 8 | **71.4%** | 62.5% | UI VM & OCR engine indirectly coupled via `OcrPreferences` |
+| `jabgui/.../git/GitPullAction.java` | `jabgui/.../git/GitPushAction.java` | **5** | 8 / 7 | 62.5% | **71.4%** | Symmetric Git UI actions lacking shared template/coordinator |
+| `jabgui/.../git/GitPushAction.java` | `jablib/.../logic/git/GitHandler.java` | **5** | 7 / 19 | **71.4%** | 26.3% | UI push workflow & low-level git handler |
+| `jabgui/.../git/GitPushAction.java` | `jablib/.../logic/git/status/GitStatusChecker.java` | **5** | 7 / 12 | **71.4%** | 41.7% | UI push workflow & status checker |
+| `jabgui/.../openoffice/OOBibBase.java` | `jablib/.../openoffice/oocsltext/BSTReferenceMarkManager.java` | **5** | 33 / 7 | 15.2% | **71.4%** | OpenOffice UI bridge & CSL/BST reference mark logic |
+| `jabsrv/.../cayw/CAYWResource.java` | `jabsrv/.../cayw/format/BibLatexFormatter.java` | **5** | 19 / 7 | 26.3% | **71.4%** | HTTP endpoint & formatter contract |
+
+---
+
+### 2.3 Knowledge Loss Risk (`Bus Factor = 1` & Inactive Maintainers)
+Knowledge-loss risk in JabRef appears in **two distinct patterns**:
+
+1. **Inactive Single/Dominant-Owner Subsystems (main author inactive > 6 months, `>= 100` SLOC, `>= 65%` share — `7` files):**
+   - **Guided Walkthrough (`walkthrough/`, `Yubo Cao` — inactive since Aug 2025):**
+     - `PanelStep.java` (`182` SLOC, `100%` share, 24m BF=1) & `TooltipStep.java` (`180` SLOC, `CBO=14`, **all-time BF=1**). *Compounded risk:* both files share **two duplicated CPD clones** (`52` and `44` lines)!
+     - `Walkthrough.java` (`173` SLOC, `Cog=18`, `66.7%` `Yubo Cao`), `OnlineServicesDialogViewModel.java` (`100` SLOC, `100%` `Yubo Cao`).
+   - **Language Server (`jabls`, `Philip` — inactive since Nov 2025 / Jan 2026):**
+     - `DefinitionProvider.java` (`118` SLOC, **Cog `32`**, `100%` share, 24m BF=1) & `LspDiagnosticHandler.java` (`103` SLOC, `CBO=15`, `80%` share).
+   - **Context Menu (`MoveFileSubmenuFactory.java`):** `135` SLOC, `Cog=13`, `100%` `Ganesh` (inactive since May 2026).
+
+2. **All-Time `Bus Factor = 1` Complex Components (even if author is currently active):**
+   - **Single-PR Large Feature Drops:**
+     - `CitationEntryReviewDialog.java` (`491` SLOC, Cog **`49`**, `CBO=51`, **1 all-time commit** by `yquanjun` — AND shares the #1 largest CPD clone [`47` lines / `251` tokens] with `AllFieldsTab.java`!)
+     - `MarkdownPublicationExporter.java` (`427` SLOC, Cog `29`, `CBO=18`, `1` commit by `Ujjwal Surabhi`)
+     - `BibframeImporter.java` (`417` SLOC, Cog **`59`**, `1` commit by `Christoph`) & `BibframeExporter.java` (`363` SLOC, Cog `39`, `Christoph`)
+   - **Lead-Maintainer Concentration (`Oliver Kopp` = 100% all-time owner):**
+     - `Authors.java` (`247` SLOC, Cog **`120`**), `DBMSConnectionUrl.java` (`179` SLOC, Cog **`76`**), `SharedDatabasePreferences.java` (`312` SLOC, Cog `36`), `OfflineChanges.java` (`243` SLOC, Cog `31`).
+
+### Stage 2 Artifacts & Interactive Visuals
+- Datasets (`PROGRESS/stage2/`): `stage2_hotspots_top25.csv`, `stage2_logical_coupling_gt70.csv`, `stage2_knowledge_loss_risk.csv`, `stage2_summary.json`, `analyze_stage2.py`
+- Visuals (`PROGRESS/charts/`): `01_hotspot_matrix.png`, `02_code_smell_distribution.png`, `03_logical_coupling_and_bus_factor.png`, `04_module_health_overview.png`, `jabref_audit_charts.pdf`
+- **Interactive Explorer:** [`PROGRESS/dashboard.html`](./dashboard.html) *(open directly in any browser — search, filter, sort all 2,298 production classes, coupling pairs, Bus Factor risks, smells & clones, or print to PDF)*
 
 ---
 

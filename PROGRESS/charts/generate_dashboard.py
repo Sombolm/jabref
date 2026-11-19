@@ -1,8 +1,9 @@
 """Generate a self-contained interactive HTML dashboard (PROGRESS/dashboard.html).
 
-Embeds Stage 1 & Stage 2 datasets directly into static HTML/JS/CSS with zero external dependencies
-so the user can interactively search, filter, sort, and inspect hotspots, coupling pairs,
-knowledge loss risks, code smells, and clones locally in any browser.
+Embeds Stage 1 & Stage 2 datasets directly into static HTML/JS/CSS so the user can interactively
+search, filter, sort, and inspect hotspots, coupling pairs, knowledge loss risks, code smells, and clones
+locally in any browser. The "3D Explorer" and "Metric Correlations" tabs (explorer3d_panel.html +
+explorer3d.js) use Plotly.js from the jsDelivr CDN, so those two tabs need an internet connection.
 """
 
 from __future__ import annotations
@@ -18,6 +19,39 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 STAGE1_DIR = REPO_ROOT / "PROGRESS" / "stage1"
 STAGE2_DIR = REPO_ROOT / "PROGRESS" / "stage2"
 OUT_HTML = REPO_ROOT / "PROGRESS" / "dashboard.html"
+CHARTS_DIR = REPO_ROOT / "PROGRESS" / "charts"
+PLOTLY_CDN = "https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"
+
+# Metrics selectable in the 3D Explorer: (key, source column, label, group, description, log-scale by default)
+EXPLORER_METRICS = [
+    ("hs", "hotspot_score", "Hotspot Score", "Composite", "(0.5*Cog + 0.3*SLOC + 0.2*CBO, log-normalised) x log-normalised 24m commits, 0-100", False),
+    ("sloc", "scc_sloc", "SLOC", "Size (scc)", "Source lines of code (scc, no blanks/comments)", True),
+    ("comments", "scc_comments", "Comment lines", "Size (scc)", "Comment lines (scc)", True),
+    ("commentRatio", "comment_ratio", "Comment ratio", "Size (scc)", "Comment lines / SLOC", False),
+    ("wmc", "ck_primary_wmc", "WMC", "OO design (CK)", "Weighted Methods per Class (sum of method complexities) of the primary class", True),
+    ("cbo", "ck_primary_cbo", "CBO", "OO design (CK)", "Coupling Between Objects: number of other classes this class depends on", True),
+    ("fanin", "ck_fanin_max", "Fan-in", "OO design (CK)", "How many classes depend on this class (max over classes in file)", True),
+    ("fanout", "ck_fanout_max", "Fan-out", "OO design (CK)", "How many classes this class depends on (max over classes in file)", True),
+    ("rfc", "ck_primary_rfc", "RFC", "OO design (CK)", "Response For a Class: number of distinct methods that can be invoked", True),
+    ("dit", "ck_primary_dit", "DIT", "OO design (CK)", "Depth of Inheritance Tree", False),
+    ("lcom", "ck_primary_lcom_norm", "LCOM* (norm.)", "OO design (CK)", "Normalised Lack of Cohesion of Methods, 0 = cohesive, 1 = no cohesion", False),
+    ("methods", "ck_methods_sum", "Methods", "OO design (CK)", "Number of methods (all classes in file)", True),
+    ("fields", "ck_fields_sum", "Fields", "OO design (CK)", "Number of fields (all classes in file)", True),
+    ("nest", "ck_max_nested_blocks", "Max nesting", "OO design (CK)", "Deepest block nesting level", False),
+    ("cyc", "pmd_cyclo_class_total", "Cyclomatic (class)", "Complexity (PMD)", "PMD cyclomatic complexity, class total", True),
+    ("cycMax", "pmd_cyclo_method_max", "Cyclomatic (max method)", "Complexity (PMD)", "Highest cyclomatic complexity of a single method", True),
+    ("cog", "pmd_cog_sum", "Cognitive (sum)", "Complexity (PMD)", "Sum of PMD cognitive complexity over all methods", True),
+    ("cogMax", "pmd_cog_max", "Cognitive (max method)", "Complexity (PMD)", "Highest cognitive complexity of a single method", True),
+    ("cog15", "pmd_cog_methods_ge_15", "Methods with Cog >= 15", "Complexity (PMD)", "Number of methods over the usual cognitive complexity threshold (15)", True),
+    ("smells", "pmd_total_smells", "PMD smells (total)", "Smells (PMD/CPD)", "All PMD design / dead-code violations in the file", True),
+    ("lod", "smell_LawOfDemeter", "LawOfDemeter", "Smells (PMD/CPD)", "Law of Demeter violations (feature envy / train wrecks)", True),
+    ("dup", "cpd_duplicated_lines", "Duplicated lines", "Smells (PMD/CPD)", "Lines in CPD clones (>= 100 tokens)", True),
+    ("c24", "commits_24m", "Commits 24m", "Evolution (Git)", "Non-merge commits touching the file in the last 24 months", True),
+    ("c12", "commits_12m", "Commits 12m", "Evolution (Git)", "Non-merge commits touching the file in the last 12 months", True),
+    ("churn", "total_churn_lines_24m", "Churn lines 24m", "Evolution (Git)", "Lines added + deleted in the last 24 months", True),
+    ("auth", "distinct_authors_24m", "Authors 24m", "Ownership (Git)", "Distinct authors in the last 24 months (1 = Bus Factor 1)", True),
+    ("share", "main_author_share_pct", "Main author share %", "Ownership (Git)", "Share of 24m commits by the main author", False),
+]
 
 
 def load_cpd_clones() -> list[dict]:
@@ -47,6 +81,34 @@ def load_cpd_clones() -> list[dict]:
             clones.append({"lines": lines, "tokens": tokens, "occurrences": occ, "locations": files})
     clones.sort(key=lambda x: (x["tokens"], x["lines"]), reverse=True)
     return clones
+
+
+def build_explorer(df: pd.DataFrame) -> dict:
+    """Columnar per-file metric table + Spearman correlation matrix for the 3D Explorer tab."""
+    d = df.sort_values("hotspot_score", ascending=False).reset_index(drop=True).copy()
+    d["comment_ratio"] = (d["scc_comments"] / d["scc_sloc"].replace(0, np.nan)).round(3)
+    d["main_author_share_pct"] = (d["main_author_share"] * 100).round(1)
+
+    def clean(v):
+        if pd.isna(v):
+            return None
+        v = float(v)
+        return int(v) if v.is_integer() else round(v, 3)
+
+    numeric = pd.DataFrame({key: pd.to_numeric(d[col], errors="coerce") for key, col, *_ in EXPLORER_METRICS})
+    corr = numeric.corr(method="spearman", min_periods=30)
+    active = d["main_author_active_6m"].map(lambda v: True if pd.isna(v) else str(v).strip().lower() in ("true", "1"))
+    return {
+        "metrics": [{"k": k, "label": lbl, "g": grp, "d": desc, "log": log} for k, _, lbl, grp, desc, log in EXPLORER_METRICS],
+        "files": d["file_path"].tolist(),
+        "names": [Path(f).stem for f in d["file_path"]],
+        "module": d["module"].tolist(),
+        "owner": d["main_author_name"].fillna("").astype(str).tolist(),
+        "active": active.tolist(),
+        "god": (d["smell_GodClass"].fillna(0) > 0).tolist(),
+        "cols": {k: [clean(v) for v in numeric[k]] for k in numeric.columns},
+        "corr": {"keys": list(corr.columns), "rho": [[clean(v) for v in row] for row in corr.values]},
+    }
 
 
 def main() -> None:
@@ -119,7 +181,10 @@ def main() -> None:
         "coupling": coupling_records,
         "knowledge_loss": kl_records,
         "clones": clones,
+        "explorer": build_explorer(df),
     }
+    explorer_panel = (CHARTS_DIR / "explorer3d_panel.html").read_text(encoding="utf-8")
+    explorer_js = (CHARTS_DIR / "explorer3d.js").read_text(encoding="utf-8")
 
     data_json = json.dumps(payload, separators=(",", ":"))
 
@@ -129,6 +194,7 @@ def main() -> None:
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JabRef Maintainability Audit — Interactive Explorer</title>
+<script src="{PLOTLY_CDN}"></script>
 <style>
   :root {{
     --bg: #0f172a; --card: #1e293b; --card2: #273549; --border: #334155;
@@ -202,6 +268,8 @@ def main() -> None:
     <button class="tab" onclick="showTab('coupling', this)">Logical Coupling (&gt;70%)</button>
     <button class="tab" onclick="showTab('bus', this)">Knowledge Loss (Bus Factor = 1)</button>
     <button class="tab" onclick="showTab('smells', this)">Code Smells &amp; CPD Clones</button>
+    <button class="tab" id="tabbtn-explorer3d" onclick="showTab('explorer3d', this)">3D Explorer</button>
+    <button class="tab" id="tabbtn-corr" onclick="showTab('corr', this)">Metric Correlations</button>
   </div>
 
   <section id="panel-matrix" class="panel active">
@@ -292,6 +360,7 @@ def main() -> None:
       </div>
     </div>
   </section>
+{explorer_panel}
 </main>
 
 <div id="tooltip"></div>
@@ -304,6 +373,7 @@ function showTab(id, btn) {{
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
   btn.classList.add('active');
+  if (window.onTabShown) window.onTabShown(id);
 }}
 
 function initKPIs() {{
@@ -493,6 +563,8 @@ renderClasses();
 renderCoupling();
 renderKL();
 renderSmells();
+
+{explorer_js}
 </script>
 </body>
 </html>

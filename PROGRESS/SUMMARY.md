@@ -185,6 +185,9 @@ Knowledge-loss risk in JabRef appears in **two distinct patterns**:
 - Datasets (`PROGRESS/stage2/`): `stage2_hotspots_top25.csv`, `stage2_logical_coupling_gt70.csv`, `stage2_knowledge_loss_risk.csv`, `stage2_summary.json`, `analyze_stage2.py`
 - Visuals (`PROGRESS/charts/`): `01_hotspot_matrix.png`, `02_code_smell_distribution.png`, `03_logical_coupling_and_bus_factor.png`, `04_module_health_overview.png`, `jabref_audit_charts.pdf`
 - **Interactive Explorer:** [`PROGRESS/dashboard.html`](./dashboard.html) *(open directly in any browser — search, filter, sort all 2,298 production classes, coupling pairs, Bus Factor risks, smells & clones, or print to PDF)*
+  - **3D Metric Explorer tab:** pick any of 27 per-file metrics (scc / CK / PMD / CPD / Git) for X, Y, Z, color and bubble size, with log axes, presets (hotspot, coupling, knowledge risk, cohesion, smells, size), module/GodClass/inactive-owner filters and class search; clicking a point (or a row in the class tables) shows all metrics of that class with percentiles, its >70% co-change partners, knowledge-loss flags and CPD clones. Spearman rho between the plotted axes is recomputed live for the filtered files.
+  - **Metric Correlations tab:** Spearman correlation heatmap of all 27 metrics (click a cell to open the pair in 3D) + ranking of the strongest cross-family relationships. Notable: change frequency follows size and coupling (rho(commits 24m, SLOC) = 0.62, vs. CBO = 0.54, vs. fan-out = 0.55), and ownership concentration falls as files grow (rho(main author share, SLOC) = -0.51).
+  - *Note:* these two tabs load Plotly.js 2.35.2 from the jsDelivr CDN, so they need an internet connection; the other tabs work offline. Source: `charts/generate_dashboard.py` + `charts/explorer3d_panel.html` + `charts/explorer3d.js`.
 
 ---
 

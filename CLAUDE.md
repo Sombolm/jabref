@@ -67,7 +67,7 @@ Select **top 3 to 5 most critical issues** from Stage 2:
   - [x] Task 1.1: Static Code Metrics (`scc` v4.1.0, `CK` 0.7.0, `PMD` 7.29.0)
   - [x] Task 1.2: Code Smells & Duplication Detection (`PMD` 3,007 smells, `PMD CPD` 28 clone groups)
   - [x] Task 1.3: Repository Evolution Metrics (`PyDriller` 2.12 — 4,330 non-merge commits over 24m)
-- [x] **Stage 2: Data Correlation & Hotspot Analysis** *(completed — outputs in `PROGRESS/stage2/`, charts in `PROGRESS/charts/`, interactive explorer in `PROGRESS/dashboard.html`, summary in [`PROGRESS/SUMMARY.md`](./PROGRESS/SUMMARY.md))*
+- [x] **Stage 2: Data Correlation & Hotspot Analysis** *(completed — outputs in `PROGRESS/stage2/`, charts in `PROGRESS/charts/`, interactive explorer in `PROGRESS/dashboard.html` incl. 3D Metric Explorer & Spearman correlation matrix, summary in [`PROGRESS/SUMMARY.md`](./PROGRESS/SUMMARY.md))*
   - [x] Task 2.1: Hotspot Identification (Top 5 hotspots: `JabRefCliPreferences`, `LibraryTab`, `JabRefGuiPreferences`, `JabRefFrame`, `CitationRelationsTab`)
   - [x] Task 2.2: Logical Coupling Analysis (`11` non-manifest production pairs >70% co-change without direct dependency)
   - [x] Task 2.3: Knowledge Loss Risk (`7` inactive-owner files >=100 SLOC + all-time Bus Factor = 1 complex components)

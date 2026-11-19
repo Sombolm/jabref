@@ -1,0 +1,73 @@
+  <style>
+    .ex-lbl { display: flex; align-items: center; gap: 6px; font-size: 0.86rem; color: var(--muted); }
+    .ex-lbl select { max-width: 240px; }
+    .ex-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; }
+    .ex-plot { height: 680px; background: #0b1120; border: 1px solid var(--border); border-radius: 8px; }
+    .ex-detail { max-height: 680px; overflow-y: auto; background: #0b1120; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 0.84rem; }
+    .ex-corr { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; font-size: 0.82rem; }
+    .ex-chip { background: var(--card2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+    .ex-mtable { width: 100%; margin-top: 8px; font-size: 0.8rem; }
+    .ex-mtable td { padding: 3px 6px; white-space: normal; }
+    .ex-mtable td:last-child { white-space: nowrap; }
+    .ex-mtable th { position: static; padding: 4px 6px; }
+    .ex-grp { color: var(--accent); font-weight: 700; padding-top: 8px !important; border-bottom: 1px solid var(--border); }
+    .ex-pbar { display: inline-block; width: 80px; height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; vertical-align: middle; }
+    .ex-pbar div { height: 100%; }
+    .ex-ptxt { font-size: 0.72rem; color: var(--muted); margin-left: 6px; }
+    .ex-sec { margin-top: 12px; font-weight: 700; color: var(--accent); }
+    .ex-li { margin: 4px 0; }
+    .ex-li a, #corr-table a { color: var(--accent); }
+    #top10-table tbody tr, #classes-table tbody tr { cursor: pointer; }
+    @media (max-width: 1000px) { .ex-grid { grid-template-columns: 1fr; } .ex-plot { height: 520px; } }
+  </style>
+  <section id="panel-explorer3d" class="panel">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <div>
+          <strong>3D Metric Explorer</strong>
+          <div class="sub">Pick any metric for X / Y / Z, color and bubble size. Drag to rotate, scroll to zoom, click a point to inspect the class. Hover shows raw values (log axes are labelled with raw values too).</div>
+        </div>
+        <select id="ex-preset" onchange="exApplyPreset(this.value)"></select>
+      </div>
+      <div class="controls">
+        <label class="ex-lbl">X <select id="ex-x" onchange="exRender()"></select></label>
+        <label class="chk"><input type="checkbox" id="ex-lx" onchange="exRender()"> log</label>
+        <label class="ex-lbl">Y <select id="ex-y" onchange="exRender()"></select></label>
+        <label class="chk"><input type="checkbox" id="ex-ly" onchange="exRender()"> log</label>
+        <label class="ex-lbl">Z <select id="ex-z" onchange="exRender()"></select></label>
+        <label class="chk"><input type="checkbox" id="ex-lz" onchange="exRender()"> log</label>
+      </div>
+      <div class="controls">
+        <label class="ex-lbl">Color <select id="ex-c" onchange="exRender()"></select></label>
+        <label class="ex-lbl">Size <select id="ex-s" onchange="exRender()"></select></label>
+        <label class="ex-lbl">Module <select id="ex-mod" onchange="exRender()"></select></label>
+        <label class="ex-lbl">Min 24m commits <input type="number" id="ex-minc" value="0" min="0" style="width:70px" oninput="exRender()"></label>
+        <label class="chk"><input type="checkbox" id="ex-god" onchange="exRender()"> GodClass only</label>
+        <label class="chk"><input type="checkbox" id="ex-inact" onchange="exRender()"> Inactive owner only</label>
+        <label class="chk"><input type="checkbox" id="ex-top5" checked onchange="exRender()"> Label Top 5</label>
+      </div>
+      <div class="controls">
+        <input type="text" id="ex-search" list="ex-names" placeholder="Find class (highlights matches, Enter = inspect first)..." oninput="exRender()" onkeydown="if(event.key==='Enter') exSelectFirstMatch()">
+        <datalist id="ex-names"></datalist>
+        <span class="sub" id="ex-count"></span>
+      </div>
+      <div id="ex-corr" class="ex-corr"></div>
+      <div class="ex-grid">
+        <div id="ex-plot" class="ex-plot"></div>
+        <div id="ex-detail" class="ex-detail"><div class="sub">Click a point (or a row in the Top 10 / All Classes tables) to see every metric of that class, its percentile versus all production files, co-change partners, knowledge-loss flags and clones.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-corr" class="panel">
+    <div class="card">
+      <strong>Metric Correlations (Spearman &rho;, all production Java files)</strong>
+      <div class="sub">How strongly does one metric move with another? &rho; = +1: always rise together, 0: unrelated, &minus;1: one rises as the other falls. Spearman uses ranks, so it is robust to the heavy outliers in this codebase. <strong>Click any cell</strong> to open that pair as X / Y in the 3D Explorer.</div>
+      <div id="corr-plot" style="margin-top:10px;"></div>
+    </div>
+    <div class="card">
+      <strong>Strongest relationships between different metric families</strong>
+      <div class="sub">Pairs inside the same family (e.g. 24m vs. 12m commits, Cog Sum vs. Cog Max) are left out because they are related by construction.</div>
+      <div class="table-wrap" style="margin-top:10px;max-height:460px;"><table id="corr-table"></table></div>
+    </div>
+  </section>
